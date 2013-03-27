@@ -1,0 +1,89 @@
+<html>
+  <head>
+    <style>
+      svg {
+        border: 1px solid #ccc;
+      }
+    </style>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+    <script src="http://d3js.org/d3.v3.min.js"></script>
+    <script>
+
+    $(document).ready(function() {
+      indexToGet=0;
+
+      var width = 720, height = 400;
+
+      var projection = d3.geo.equirectangular()
+          .scale(100)
+          .translate([width/2,height/2])
+          .rotate([-180,0]);
+
+      
+      var svg = d3.select("#container").append("svg")
+          .attr("width", width)
+          .attr("height", height);
+
+      
+      svg.on('mousemove', function(d,i) {
+        var mouse = d3.mouse(this)
+        var x = mouse[0];
+        var y = mouse[1];
+
+        var currentIndex = indexToGet;
+        var newIndex = Math.floor(x / width * 34);
+        if(newIndex != currentIndex) {
+          console.log("Loading data for index" + newIndex);
+          indexToGet = newIndex;
+          getDataForIndex(indexToGet);
+        }
+      });
+
+      getDataForIndex(indexToGet);
+
+      function getDataForIndex(index) {
+        $.getJSON("data.php?index="+index, function(data) {
+          console.log("Load complete, doing SVG");
+          // enter
+          svg.selectAll("circle")
+              .data(data)
+              .enter()
+              .append("circle")
+              .attr("class", "point")
+              .attr("r", 1);
+
+          // update
+          svg.selectAll("circle")
+             .data(data)
+             .attr("cx", function(d) {
+                var lat = d[1];
+                var lon = d[2];
+                if(lon && lat) {
+                  var xy = projection([lon,lat])
+                  return xy[0];
+                }
+              })
+            .attr("cy", function(d) {
+                var lat = d[1];
+                var lon = d[2];
+                if(lon && lat) {
+                  var xy = projection([lon,lat])
+                  return xy[1];
+                }
+              })
+
+            // exit
+          svg.selectAll("circle")
+             .data(data)
+             .exit()
+             .remove();
+          });
+      }
+
+      });
+    </script>
+  </head>
+  <body>
+    <div id="container"></div>
+  </body>
+</html>
